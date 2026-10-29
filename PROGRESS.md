@@ -6,29 +6,26 @@
 - 完成手机优先三分栏 UI：今天 / 足迹 / 同步。
 - 完成 IndexedDB 本地存储、导出与导入。
 - 完成 PWA manifest、图标和 Service Worker 离线缓存。
-- 按用户要求从 Netlify 切换为 GitHub Pages。
-- 完成私有 GitHub Gist 同步客户端和删除墓碑合并。
-- 完成旧记录初始化与线上检查脚本。
-- GitHub Pages 自动发布工作流已写入。
+- 完成 GitHub Pages 发布工作流。
+- 完成 Cloudflare Worker + D1 同步后端。
+- 已创建 D1 数据库、建表并部署 Worker。
+- 旧记录已写入用户私人同步空间并验证可读取。
+- 手机主流程、刷新持久化、断网重开、三设备同步测试全部通过。
 
-## 当前验证结果
+## 当前地址
 
-- 纯逻辑、Gist 同步、真浏览器与离线测试全部通过。
-- 真浏览器截图：`artifacts/e2e-mobile.png`。
-- 三设备同步与墓碑删除：通过。
+- App：https://2805303591cxz-svg.github.io/progress-notebook-mobile/
+- 同步后端：https://progress-notebook-sync.progress-cxz-280530.workers.dev/
 
 ## 待完成
 
-- [ ] 创建 GitHub 公开仓库并推送
-- [ ] 启用 GitHub Pages 工作流并等待首次部署
-- [ ] 创建仅含 gist 权限的专用 GitHub 令牌
-- [ ] 创建私有 Gist 并导入旧记录
-- [ ] 线上 200 与 Gist 同步实测
+- [ ] 将最新代码和同步地址重新发布到 GitHub Pages
+- [ ] 线上 App 双端同步实测
 - [ ] 生成手机二维码
 - [ ] 创建电脑端“同步版”快捷方式
+- [ ] 更新 Skill 模板为 D1 强一致版本
 
 ## 安全边界
 
-- 公开仓库只放 App 源码，不放用户记录或 GitHub 令牌。
-- `.github-sync-token`、`.sync-config.json`、`.sync-link` 均在 `.gitignore` 中。
-- 同步链接包含访问令牌，只能发给自己的设备。
+- 公开仓库只放 App 源码，不放用户记录或同步码。
+- `data/`、`.sync-code`、`.sync-link`、测试快照均在 `.gitignore` 中。

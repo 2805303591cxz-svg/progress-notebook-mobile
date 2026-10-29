@@ -39,10 +39,7 @@ test('手机端主流程、刷新持久化与离线打开', async () => {
     await browser.waitFor("document.querySelectorAll('.star-recorded').length >= 4", 5000);
 
     await browser.evaluate("document.querySelector('[data-go=settings]').click()");
-    await browser.waitFor("!document.querySelector('#panel-settings').hidden && !!document.querySelector('#connectGithub')", 5000);
-    await browser.evaluate("document.querySelector('#connectGithub').click()");
-    await browser.waitFor("document.querySelector('#syncDialog').open === true", 3000);
-    await browser.evaluate("document.querySelector('#closeSyncDialog').click()");
+    await browser.waitFor("!document.querySelector('#panel-settings').hidden && !!document.querySelector('#syncCodeInput') && !!document.querySelector('#generateCode')", 5000);
 
     const swReady = await browser.evaluate("navigator.serviceWorker.ready.then(r => !!r.active)");
     assert.equal(swReady, true);

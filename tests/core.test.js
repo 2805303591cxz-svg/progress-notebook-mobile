@@ -7,7 +7,10 @@ import {
   calcStreak,
   monthStats,
   totalStats,
-  statePayload
+  statePayload,
+  isValidSyncCode,
+  generateSyncCode,
+  makeSyncLink
 } from '../src/core.js';
 
 const legacy = {
@@ -86,4 +89,17 @@ test('同步载荷保留删除墓碑', () => {
   assert.equal(payload.schemaVersion, 2);
   assert.equal(payload.entries.length, 2);
   assert.equal(payload.entries.find((entry) => entry.id === '2026-10-28').deleted, true);
+});
+
+test('同步码使用足够长的无歧义字符', () => {
+  const code = generateSyncCode(() => 1, 20);
+  assert.equal(code.length, 20);
+  assert.equal(isValidSyncCode(code), true);
+  assert.equal(isValidSyncCode('123'), false);
+});
+
+test('同步链接把同步码放在不会发送给服务器的 hash 中', () => {
+  const link = makeSyncLink('https://example.github.io/app/', 'ABCDEFGH23456789');
+  assert.match(link, /#code=ABCDEFGH23456789$/);
+  assert.equal(new URL(link).searchParams.has('code'), false);
 });

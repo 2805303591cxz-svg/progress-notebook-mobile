@@ -2,7 +2,7 @@ const VERSION = 'progress-notebook-v1.0.0';
 const SHELL_CACHE = `shell-${VERSION}`;
 const RUNTIME_CACHE = `runtime-${VERSION}`;
 const SHELL_FILES = [
-  './', './index.html', './styles.css', './app.js', './core.js', './db.js',
+  './', './index.html', './styles.css', './app.js', './config.js', './core.js', './db.js',
   './sync-client.js', './manifest.webmanifest', './icons/icon-192.png',
   './icons/icon-256.png', './icons/icon-512.png', './icons/icon-maskable-512.png'
 ];

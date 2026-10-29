@@ -135,20 +135,21 @@
 
         <section class="settings-card sync-card" aria-labelledby="syncTitle">
           <div class="card-head">
-            <div><p class="eyebrow">GITHUB PRIVATE GIST</p><h2 id="syncTitle">跨设备同步</h2></div>
+            <div><p class="eyebrow">SHARED PRIVATELY</p><h2 id="syncTitle">跨设备同步</h2></div>
             <span class="status-badge" id="cloudBadge">未连接</span>
           </div>
-          <p class="settings-copy">记录会写入你自己的私有 GitHub Gist。手机和电脑连接同一个 Gist，就能共享同一份文字记录；未连接时仍可离线使用。</p>
-          <div class="gist-summary">
-            <span>数据仓库</span>
-            <strong id="gistIdLabel">尚未连接</strong>
+          <p class="settings-copy">手机和电脑输入同一组同步码，就会共享同一份文字记录。没有同步码时，仍然可以离线记录。</p>
+          <label class="field-label" for="syncCodeInput">同步码</label>
+          <div class="code-row">
+            <input id="syncCodeInput" type="text" inputmode="text" autocomplete="off" spellcheck="false" maxlength="32" placeholder="输入 16–32 位同步码">
+            <button class="small-button" id="saveSyncCode" type="button">保存</button>
           </div>
+          <p class="field-help" id="syncHelp">同步码就是这组记录的私密钥匙，请只放在自己的设备上。</p>
           <div class="button-row">
-            <button class="primary-button" id="connectGithub" type="button">连接 GitHub</button>
-            <button class="secondary-button" id="syncNow" type="button">立即同步</button>
+            <button class="primary-button" id="syncNow" type="button">立即同步</button>
+            <button class="secondary-button" id="generateCode" type="button">生成新同步码</button>
             <button class="secondary-button" id="copyLink" type="button">复制同步链接</button>
           </div>
-          <p class="field-help" id="syncHelp">建议直接使用交付时提供的同步链接，一次完成连接。</p>
           <p class="sync-meta" id="syncMeta">尚未同步</p>
         </section>
 
@@ -170,7 +171,7 @@
 
         <section class="privacy-note">
           <span aria-hidden="true">✦</span>
-          <p><strong>只同步文字。</strong>不采集图片、位置、联系人或设备标识。连接 GitHub 后，记录只保存在你的私有 Gist 中；访问令牌只保存在本机浏览器。</p>
+          <p><strong>只同步文字。</strong>不采集图片、位置、联系人或设备标识。连接同步码后，记录保存在受口令保护的 Cloudflare KV 私人空间，不会公开展示。</p>
         </section>
       </section>
     </main>
@@ -198,25 +199,6 @@
     <button class="danger-button" id="deleteEntry" type="button">删除这一天</button>
   </dialog>
 
-
-  <dialog id="syncDialog" aria-labelledby="syncDialogTitle">
-    <div class="dialog-head">
-      <div><p class="eyebrow">PRIVATE CONNECTION</p><h2 id="syncDialogTitle">连接私有 GitHub Gist</h2></div>
-      <button class="icon-button" id="closeSyncDialog" type="button" aria-label="关闭">×</button>
-    </div>
-    <div class="sync-dialog-body">
-      <p class="settings-copy">连接信息只保存在这台设备。令牌需要拥有 <code>gist</code> 权限，用来读写这一个私有 Gist。</p>
-      <label class="field-label" for="githubTokenInput">GitHub 访问令牌</label>
-      <input class="secret-input" id="githubTokenInput" type="password" autocomplete="off" spellcheck="false" placeholder="留空则沿用已保存的令牌">
-      <label class="field-label" for="gistIdInput">私有 Gist ID</label>
-      <input class="secret-input" id="gistIdInput" type="text" autocomplete="off" spellcheck="false" placeholder="例如 4f1c2d3e5a6b7c8d9e0f">
-      <div class="button-row">
-        <button class="primary-button" id="saveGithubConnection" type="button">保存并同步</button>
-        <button class="secondary-button" id="closeSyncDialogSecondary" type="button">取消</button>
-      </div>
-      <p class="field-help">更安全的方式是扫描或打开包含连接信息的同步链接，令牌会经 URL 的 # 片段传入，不会发送给 GitHub Pages。</p>
-    </div>
-  </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastText"></span></div>
 

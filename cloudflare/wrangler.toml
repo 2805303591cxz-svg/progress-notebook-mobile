@@ -1,0 +1,8 @@
+name = "progress-notebook-sync"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+[[d1_databases]]
+binding = "PROGRESS_DB"
+database_name = "progress-notebook-db"
+database_id = "4e03e4ed-efe3-4245-900b-cbf24ce1fa79"

@@ -4,6 +4,9 @@ import {
   charCount,
   dateFromKey,
   dateKey,
+  generateSyncCode,
+  isValidSyncCode,
+  makeSyncLink,
   mergeEntries,
   monthStats,
   statePayload,
@@ -19,13 +22,7 @@ import {
   requestPersistentStorage,
   setMeta
 } from './db.js';
-import {
-  isValidGithubToken,
-  isValidGistId,
-  makeGistSyncLink,
-  parseGistSyncHash,
-  syncWithCloud
-} from './sync-client.js';
+import { syncWithCloud } from './sync-client.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
@@ -42,8 +39,7 @@ const today = new Date();
 const todayKey = dateKey(today);
 const state = {
   entries: [],
-  syncToken: '',
-  gistId: '',
+  syncCode: '',
   lastSyncAt: null,
   syncPhase: 'idle',
   syncMessage: '',
@@ -197,20 +193,19 @@ async function saveToday(event) {
 }
 
 function isSyncConfigured() {
-  return Boolean(state.syncToken && state.gistId);
+  return isValidSyncCode(state.syncCode);
 }
 
 function scheduleSync() {
-  if (!state.syncToken) return;
+  if (!isSyncConfigured()) return;
   clearTimeout(state.syncTimer);
   state.syncTimer = setTimeout(() => performSync({ silent: true }), 4000);
 }
 
 function syncStatusText() {
-  if (!state.syncToken) return { text: '本机模式', cls: '' };
+  if (!isSyncConfigured()) return { text: '本机模式', cls: '' };
   if (state.syncPhase === 'syncing') return { text: '正在同步', cls: 'is-syncing' };
   if (state.syncPhase === 'error') return { text: '同步待重试', cls: 'is-error' };
-  if (!state.gistId) return { text: '等待初始化', cls: '' };
   if (state.lastSyncAt) return { text: '已同步', cls: 'is-synced' };
   return { text: '等待同步', cls: '' };
 }
@@ -227,15 +222,13 @@ function renderSyncUI() {
   badge.textContent = status.text;
   if (status.cls) badge.classList.add(status.cls);
 
-  $('#gistIdLabel').textContent = state.gistId ? '••••' + state.gistId.slice(-10) : '尚未连接';
-  $('#connectGithub').textContent = state.syncToken ? '更换连接' : '连接 GitHub';
-  $('#syncNow').disabled = !state.syncToken || state.syncPhase === 'syncing';
+  const input = $('#syncCodeInput');
+  if (document.activeElement !== input) input.value = state.syncCode;
+  $('#syncNow').disabled = !isSyncConfigured() || state.syncPhase === 'syncing';
   $('#copyLink').disabled = !isSyncConfigured();
   $('#syncHelp').textContent = isSyncConfigured()
-    ? '连接正常。同步链接包含访问令牌，请只发送到你自己的另一台设备。'
-    : state.syncToken
-      ? '令牌已保存，正在等待创建或确认私有 Gist。'
-      : '建议直接使用交付时提供的同步链接，一次完成连接。';
+    ? '电脑和手机填入同一组同步码，就能共享同一份记录。同步码就是私密钥匙。'
+    : '还没有连接云端。生成或输入一组同步码后，记录才会跨设备共享。';
   const syncTime = state.lastSyncAt
     ? chineseDate(new Date(state.lastSyncAt), { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
     : '';
@@ -245,8 +238,8 @@ function renderSyncUI() {
 }
 
 async function performSync({ silent = false } = {}) {
-  if (!isValidGithubToken(state.syncToken)) {
-    if (!silent) showToast('请先连接 GitHub 私有 Gist。');
+  if (!isSyncConfigured()) {
+    if (!silent) showToast('请先保存一组有效的同步码。');
     return;
   }
   if (state.syncPhase === 'syncing') return;
@@ -255,23 +248,17 @@ async function performSync({ silent = false } = {}) {
   renderSyncUI();
   state.syncController?.abort();
   state.syncController = new AbortController();
-  const timeout = setTimeout(() => state.syncController.abort(), 20000);
+  const timeout = setTimeout(() => state.syncController.abort(), 18000);
   try {
-    const result = await syncWithCloud({
-      token: state.syncToken,
-      gistId: state.gistId,
-      signal: state.syncController.signal
-    }, state.entries);
-    state.gistId = result.gistId;
-    await setMeta('gistId', result.gistId);
+    const result = await syncWithCloud(state.syncCode, state.entries, state.syncController.signal);
     await putEntries(result.rows);
     state.entries = mergeEntries(result.rows);
     state.lastSyncAt = result.syncedAt;
     state.syncPhase = 'idle';
-    state.syncMessage = result.created ? '已创建私有 Gist' : result.pushed ? '已合并并上传' : '已拉取最新记录';
+    state.syncMessage = result.pushed ? '已合并并上传' : '已拉取最新记录';
     await setMeta('lastSyncAt', state.lastSyncAt);
     renderAll();
-    if (!silent) showToast('GitHub 记录已同步。');
+    if (!silent) showToast('云端记录已同步。');
   } catch (error) {
     state.syncPhase = 'error';
     state.syncMessage = error.name === 'AbortError' ? '连接超时，下次会重试' : '同步失败：' + error.message;
@@ -282,62 +269,34 @@ async function performSync({ silent = false } = {}) {
   }
 }
 
-function openSyncDialog() {
-  $('#githubTokenInput').value = '';
-  $('#githubTokenInput').placeholder = state.syncToken ? '已保存令牌；留空则继续使用' : 'ghp_... 或 github_pat_...';
-  $('#gistIdInput').value = state.gistId || '';
-  const dialog = $('#syncDialog');
-  if (typeof dialog.showModal === 'function') dialog.showModal();
-  else dialog.setAttribute('open', '');
-}
-
-function closeSyncDialog() {
-  const dialog = $('#syncDialog');
-  if (typeof dialog.close === 'function') dialog.close();
-  else dialog.removeAttribute('open');
-}
-
-async function saveGithubConnection() {
-  const token = $('#githubTokenInput').value.trim() || state.syncToken;
-  const gistId = $('#gistIdInput').value.trim();
-  if (!isValidGithubToken(token)) {
-    showToast('GitHub 令牌格式不正确。');
+async function applySyncCode(rawCode, { generate = false } = {}) {
+  const code = String(rawCode || '').trim();
+  if (!isValidSyncCode(code)) {
+    showToast('同步码需要 16–32 位字母、数字、下划线或短横线。');
     return;
   }
-  if (gistId && !isValidGistId(gistId)) {
-    showToast('Gist ID 格式不正确。');
-    return;
-  }
-  if (state.gistId && gistId && state.gistId !== gistId) {
-    const ok = window.confirm('切换数据仓库后，本机记录会合并到新的私有 Gist。确定切换吗？');
+  if (state.syncCode && state.syncCode !== code) {
+    const ok = window.confirm('切换同步码后，本机记录会合并到新的同步空间。确定切换吗？');
     if (!ok) return;
   }
-  state.syncToken = token;
-  state.gistId = gistId;
+  state.syncCode = code;
   state.lastSyncAt = null;
   state.syncPhase = 'idle';
-  state.syncMessage = gistId ? '连接已保存，正在同步' : '正在创建私有 Gist';
-  await setMeta('syncToken', token);
-  await setMeta('gistId', gistId);
+  state.syncMessage = generate ? '新同步码已创建，正在上传本机记录' : '同步码已保存，正在连接';
+  await setMeta('syncCode', code);
   renderSyncUI();
-  closeSyncDialog();
-  await performSync();
+  await performSync({ silent: true });
+  showToast(generate ? '新同步码已创建。' : '同步码已保存。');
 }
 
 async function copySyncLink() {
-  if (!isSyncConfigured()) {
-    showToast('请先完成一次同步，生成私有 Gist。');
-    return;
-  }
-  const link = makeGistSyncLink(location.origin + location.pathname, {
-    gistId: state.gistId,
-    token: state.syncToken
-  });
+  if (!isSyncConfigured()) return;
+  const link = makeSyncLink(location.origin + location.pathname, state.syncCode);
   try {
     await navigator.clipboard.writeText(link);
-    showToast('同步链接已复制。链接含密钥，请只发给自己的设备。');
+    showToast('同步链接已复制，可发给自己的另一台设备。');
   } catch (_) {
-    showToast('无法访问剪贴板，请在连接页面手动输入令牌和 Gist ID。');
+    showToast('无法访问剪贴板，请手动输入同步码。');
   }
 }
 
@@ -548,24 +507,22 @@ async function importBackupFile(file) {
   }
 }
 
-async function initSyncFromURL() {
-  const config = parseGistSyncHash(location.hash);
-  if (!config) return null;
+async function initSyncCodeFromURL() {
+  const params = new URLSearchParams(location.hash.replace(/^#/, ''));
+  const code = (params.get('code') || '').trim();
+  if (!isValidSyncCode(code)) return '';
   history.replaceState(null, '', location.pathname + location.search);
-  await setMeta('syncToken', config.token);
-  await setMeta('gistId', config.gistId);
-  return config;
+  await setMeta('syncCode', code);
+  return code;
 }
 
 async function bootstrap() {
   updateHeaderDate();
-  const urlConfig = await initSyncFromURL();
-  state.syncToken = urlConfig?.token || (await getMeta('syncToken', '')) || '';
-  state.gistId = urlConfig?.gistId || (await getMeta('gistId', '')) || '';
+  state.syncCode = (await initSyncCodeFromURL()) || (await getMeta('syncCode', '')) || '';
   state.lastSyncAt = await getMeta('lastSyncAt', null);
   state.entries = await getAllEntries();
-  if (!state.entries.length && state.syncToken) {
-    state.syncMessage = '正在从 GitHub 取回记录';
+  if (!state.entries.length && isSyncConfigured()) {
+    state.syncMessage = '正在从云端取回记录';
   }
   renderAll();
   loadTodayIntoForm();
@@ -573,7 +530,7 @@ async function bootstrap() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
-  if (state.syncToken) performSync({ silent: true });
+  if (isSyncConfigured()) performSync({ silent: true });
 }
 
 form.addEventListener('submit', saveToday);
@@ -610,11 +567,12 @@ $('#toggleEntries').addEventListener('click', () => {
 $('#closeEntryDialog').addEventListener('click', closeEntryDialog);
 entryDialog.addEventListener('click', (event) => { if (event.target === entryDialog) closeEntryDialog(); });
 $('#deleteEntry').addEventListener('click', removeDetailEntry);
-$('#connectGithub').addEventListener('click', openSyncDialog);
-$('#closeSyncDialog').addEventListener('click', closeSyncDialog);
-$('#closeSyncDialogSecondary').addEventListener('click', closeSyncDialog);
-$('#syncDialog').addEventListener('click', (event) => { if (event.target === event.currentTarget) closeSyncDialog(); });
-$('#saveGithubConnection').addEventListener('click', saveGithubConnection);
+$('#saveSyncCode').addEventListener('click', () => applySyncCode($('#syncCodeInput').value));
+$('#generateCode').addEventListener('click', () => {
+  const code = generateSyncCode(null, 20);
+  $('#syncCodeInput').value = code;
+  applySyncCode(code, { generate: true });
+});
 $('#syncNow').addEventListener('click', () => performSync());
 $('#copyLink').addEventListener('click', copySyncLink);
 $('#exportBackup').addEventListener('click', exportBackup);
@@ -633,9 +591,9 @@ window.addEventListener('beforeinstallprompt', (event) => {
   event.preventDefault();
   state.deferredInstall = event;
 });
-window.addEventListener('online', () => { if (state.syncToken) performSync({ silent: true }); });
+window.addEventListener('online', () => { if (isSyncConfigured()) performSync({ silent: true }); });
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && state.syncToken) performSync({ silent: true });
+  if (!document.hidden && isSyncConfigured()) performSync({ silent: true });
 });
 
 window.__progressApp = {

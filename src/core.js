@@ -1,5 +1,6 @@
 export const SCHEMA_VERSION = 2;
 export const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+export const SYNC_CODE_RE = /^[A-Za-z0-9_-]{16,32}$/;
 
 export function charCount(text) {
   return String(text || '').replace(/\s/g, '').length;
@@ -23,6 +24,30 @@ export function addDays(date, amount) {
   const next = new Date(date);
   next.setDate(next.getDate() + amount);
   return next;
+}
+
+export function isValidSyncCode(code) {
+  return SYNC_CODE_RE.test(String(code || '').trim());
+}
+
+export function generateSyncCode(random = null, length = 20) {
+  const alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  const bytes = new Uint8Array(length);
+  if (typeof random === 'function') {
+    for (let i = 0; i < length; i += 1) bytes[i] = random() & 255;
+  } else if (globalThis.crypto && typeof globalThis.crypto.getRandomValues === 'function') {
+    globalThis.crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < length; i += 1) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('');
+}
+
+export function makeSyncLink(baseUrl, code) {
+  if (!isValidSyncCode(code)) throw new Error('同步码格式不正确');
+  const url = new URL(baseUrl);
+  url.hash = new URLSearchParams({ code }).toString();
+  return url.toString();
 }
 
 export function normalizeEntry(raw, fallbackDate, fallbackTimestamp) {
