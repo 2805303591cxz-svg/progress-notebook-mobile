@@ -1,0 +1,13 @@
+{
+  "name": "progress-notebook-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "进步记录本手机版：本地优先、可离线、GitHub Gist 跨设备同步",
+  "scripts": {
+    "build": "node scripts/build_site.mjs",
+    "serve": "node scripts/serve.mjs --root dist --port 8123",
+    "test": "node --test",
+    "sync:init": "node scripts/init-sync.mjs"
+  }
+}

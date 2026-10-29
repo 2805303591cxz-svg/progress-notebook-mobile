@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07191c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="进步记录本">
+  <meta name="description" content="每天睡前写下一件收获，让微小的进步被看见。">
+  <title>进步记录本</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"><span></span><span></span><span></span></div>
+
+  <div class="app-shell">
+    <header class="app-header">
+      <button class="brand" type="button" data-go="today" aria-label="回到今天">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none">
+            <path d="M8 6.5c4.4 0 6.8 2.3 6.8 6.8V25c0-4.5-2.4-6.8-6.8-6.8V6.5Z" fill="#F1C184"/>
+            <path d="M24 6.5c-4.4 0-6.8 2.3-6.8 6.8V25c0-4.5 2.4-6.8 6.8-6.8V6.5Z" fill="#D9B68B"/>
+            <circle cx="25.4" cy="7.1" r="2.4" fill="#E59A68"/>
+          </svg>
+        </span>
+        <span class="brand-copy">
+          <strong>进步记录本</strong>
+          <small>SMALL STEPS, KEPT</small>
+        </span>
+      </button>
+      <button class="sync-pill" id="headerSync" type="button" data-go="settings" aria-label="查看同步状态">
+        <span class="sync-dot" id="syncDot"></span>
+        <span id="syncStatus">本机模式</span>
+      </button>
+    </header>
+
+    <main class="main-content">
+      <section class="panel-view is-active" id="panel-today" data-panel="today" aria-labelledby="todayHeading">
+        <div class="date-line"><span id="todayKicker"></span><span class="date-rule"></span></div>
+        <h1 id="todayHeading"><span id="greeting">夜深了，</span><br><span class="soft">把今天轻轻收好。</span></h1>
+        <p class="intro-copy">不用写得很大。今天多懂了一点、多做了一步，或终于愿意照顾自己，都值得被看见。</p>
+
+        <div class="mini-stats" aria-label="记录概览">
+          <div><strong id="todayStreak">0</strong><span>连续天</span></div>
+          <div><strong id="todayDays">0</strong><span>已记录</span></div>
+          <div><strong id="todayWords">0</strong><span>本月字</span></div>
+        </div>
+
+        <form class="composer" id="entryForm" novalidate>
+          <div class="prompt-line">
+            <span class="prompt-icon" aria-hidden="true">✦</span>
+            <p id="promptText">今晚，哪件小事让你觉得自己在变好？</p>
+            <button class="icon-mini" id="changePrompt" type="button" aria-label="换一个提示" title="换一个提示">↻</button>
+          </div>
+
+          <label class="sr-only" for="entryTitle">给今天的小进步起个名字</label>
+          <input class="title-input" id="entryTitle" maxlength="42" autocomplete="off" placeholder="给今天的小进步起个名字">
+          <label class="sr-only" for="entryStory">今天的收获和进步</label>
+          <textarea class="story-input" id="entryStory" maxlength="1200" placeholder="今天学到了什么？完成了哪件事？哪一刻让你觉得自己比昨天多走了一步？"></textarea>
+
+          <div class="tag-strip" role="group" aria-label="给今天的进步选一个标签">
+            <button class="tag" type="button" data-tag="学习" aria-pressed="false">学习</button>
+            <button class="tag" type="button" data-tag="工作" aria-pressed="false">工作</button>
+            <button class="tag" type="button" data-tag="生活" aria-pressed="false">生活</button>
+            <button class="tag" type="button" data-tag="身体" aria-pressed="false">身体</button>
+            <button class="tag" type="button" data-tag="心情" aria-pressed="false">心情</button>
+            <button class="tag" type="button" data-tag="小小胜利" aria-pressed="false">小小胜利</button>
+          </div>
+
+          <div class="composer-footer">
+            <span id="charCount">0 / 1200</span>
+            <button class="save-button" id="saveButton" type="submit" disabled>
+              <span id="saveLabel">收好今天的进步</span>
+              <span aria-hidden="true">✦</span>
+            </button>
+          </div>
+          <p class="save-hint" id="saveHint"><strong>至少写下一句话</strong>，就可以点亮今天。</p>
+        </form>
+      </section>
+
+      <section class="panel-view" id="panel-trace" data-panel="trace" aria-labelledby="traceHeading" hidden>
+        <div class="date-line"><span>YOUR GROWTH</span><span class="date-rule"></span></div>
+        <h1 class="smaller" id="traceHeading">你走过的路，<br><span class="soft">都算数。</span></h1>
+
+        <section class="stat-cards" aria-label="成长统计">
+          <div class="stat-card"><span>认真记录</span><strong id="traceDays">0<small>天</small></strong></div>
+          <div class="stat-card"><span>连续点亮</span><strong id="traceStreak">0<small>天</small></strong></div>
+          <div class="stat-card"><span>累计收获</span><strong id="traceWords">0<small>字</small></strong></div>
+        </section>
+
+        <section class="stars-card" id="starCard" aria-labelledby="starTitle">
+          <div class="card-head">
+            <div>
+              <p class="eyebrow">LAST 28 DAYS</p>
+              <h2 id="starTitle">成长星轨</h2>
+            </div>
+            <span class="tiny-legend"><i></i>每一次认真</span>
+          </div>
+          <svg id="starMap" viewBox="0 0 560 220" role="img" aria-label="最近二十八天的成长星轨"></svg>
+          <p class="star-empty" id="starEmpty" hidden>从今晚开始，点亮第一颗星。</p>
+          <div class="stars-footer"><span>本月已点亮 <strong id="monthStars">0</strong> 颗星</span><span>点击星星回看</span></div>
+        </section>
+
+        <section class="calendar-card" aria-labelledby="calendarTitle">
+          <div class="card-head">
+            <div><p class="eyebrow">MONTHLY GLOW</p><h2 id="calendarTitle">每月微光</h2></div>
+            <div class="month-nav">
+              <button id="prevMonth" type="button" aria-label="上个月">‹</button>
+              <span id="monthLabel"></span>
+              <button id="nextMonth" type="button" aria-label="下个月">›</button>
+            </div>
+          </div>
+          <div class="week-row" aria-hidden="true"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+          <p class="calendar-summary" id="calendarSummary">这个月还没有记录</p>
+        </section>
+
+        <section class="timeline-card" aria-labelledby="timelineTitle">
+          <div class="card-head">
+            <div><p class="eyebrow">MEMORIES</p><h2 id="timelineTitle">来时的路</h2></div>
+            <button class="text-button" id="toggleEntries" type="button" hidden>查看全部</button>
+          </div>
+          <div class="entry-list" id="entryList"></div>
+        </section>
+      </section>
+
+      <section class="panel-view" id="panel-settings" data-panel="settings" aria-labelledby="settingsHeading" hidden>
+        <div class="date-line"><span>SETTINGS</span><span class="date-rule"></span></div>
+        <h1 class="smaller" id="settingsHeading">把这束光，<br><span class="soft">带到每台设备。</span></h1>
+
+        <section class="settings-card sync-card" aria-labelledby="syncTitle">
+          <div class="card-head">
+            <div><p class="eyebrow">GITHUB PRIVATE GIST</p><h2 id="syncTitle">跨设备同步</h2></div>
+            <span class="status-badge" id="cloudBadge">未连接</span>
+          </div>
+          <p class="settings-copy">记录会写入你自己的私有 GitHub Gist。手机和电脑连接同一个 Gist，就能共享同一份文字记录；未连接时仍可离线使用。</p>
+          <div class="gist-summary">
+            <span>数据仓库</span>
+            <strong id="gistIdLabel">尚未连接</strong>
+          </div>
+          <div class="button-row">
+            <button class="primary-button" id="connectGithub" type="button">连接 GitHub</button>
+            <button class="secondary-button" id="syncNow" type="button">立即同步</button>
+            <button class="secondary-button" id="copyLink" type="button">复制同步链接</button>
+          </div>
+          <p class="field-help" id="syncHelp">建议直接使用交付时提供的同步链接，一次完成连接。</p>
+          <p class="sync-meta" id="syncMeta">尚未同步</p>
+        </section>
+
+        <section class="settings-card" aria-labelledby="backupTitle">
+          <div class="card-head"><div><p class="eyebrow">YOUR DATA</p><h2 id="backupTitle">备份与恢复</h2></div></div>
+          <p class="settings-copy">本地记录保存在当前设备的浏览器中。建议偶尔导出一份备份；导出的文件包含全部文字记录。</p>
+          <div class="button-row">
+            <button class="primary-button" id="exportBackup" type="button">导出备份</button>
+            <button class="secondary-button" id="importBackup" type="button">导入备份</button>
+            <input id="backupFile" type="file" accept="application/json,.json" hidden>
+          </div>
+        </section>
+
+        <section class="settings-card install-card" aria-labelledby="installTitle">
+          <div class="card-head"><div><p class="eyebrow">ON YOUR PHONE</p><h2 id="installTitle">添加到主屏幕</h2></div></div>
+          <p class="settings-copy" id="installCopy">用手机浏览器打开后，选择“添加到主屏幕”，就能像 App 一样点开使用，也支持离线阅读。</p>
+          <button class="primary-button full" id="installButton" type="button">安装到主屏幕</button>
+        </section>
+
+        <section class="privacy-note">
+          <span aria-hidden="true">✦</span>
+          <p><strong>只同步文字。</strong>不采集图片、位置、联系人或设备标识。连接 GitHub 后，记录只保存在你的私有 Gist 中；访问令牌只保存在本机浏览器。</p>
+        </section>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="主导航">
+      <button class="nav-button is-active" type="button" data-go="today" aria-current="page">
+        <span class="nav-icon">✦</span><span>今天</span>
+      </button>
+      <button class="nav-button" type="button" data-go="trace">
+        <span class="nav-icon">⁂</span><span>足迹</span>
+      </button>
+      <button class="nav-button" type="button" data-go="settings">
+        <span class="nav-icon">◌</span><span>同步</span>
+      </button>
+    </nav>
+  </div>
+
+  <dialog id="entryDialog" aria-labelledby="dialogTitle">
+    <div class="dialog-head">
+      <div><p class="eyebrow" id="dialogDate"></p><h2 id="dialogTitle"></h2></div>
+      <button class="icon-button" id="closeEntryDialog" type="button" aria-label="关闭">×</button>
+    </div>
+    <p class="dialog-story" id="dialogStory"></p>
+    <div class="dialog-meta"><span id="dialogTag"></span><span id="dialogWords"></span></div>
+    <button class="danger-button" id="deleteEntry" type="button">删除这一天</button>
+  </dialog>
+
+
+  <dialog id="syncDialog" aria-labelledby="syncDialogTitle">
+    <div class="dialog-head">
+      <div><p class="eyebrow">PRIVATE CONNECTION</p><h2 id="syncDialogTitle">连接私有 GitHub Gist</h2></div>
+      <button class="icon-button" id="closeSyncDialog" type="button" aria-label="关闭">×</button>
+    </div>
+    <div class="sync-dialog-body">
+      <p class="settings-copy">连接信息只保存在这台设备。令牌需要拥有 <code>gist</code> 权限，用来读写这一个私有 Gist。</p>
+      <label class="field-label" for="githubTokenInput">GitHub 访问令牌</label>
+      <input class="secret-input" id="githubTokenInput" type="password" autocomplete="off" spellcheck="false" placeholder="留空则沿用已保存的令牌">
+      <label class="field-label" for="gistIdInput">私有 Gist ID</label>
+      <input class="secret-input" id="gistIdInput" type="text" autocomplete="off" spellcheck="false" placeholder="例如 4f1c2d3e5a6b7c8d9e0f">
+      <div class="button-row">
+        <button class="primary-button" id="saveGithubConnection" type="button">保存并同步</button>
+        <button class="secondary-button" id="closeSyncDialogSecondary" type="button">取消</button>
+      </div>
+      <p class="field-help">更安全的方式是扫描或打开包含连接信息的同步链接，令牌会经 URL 的 # 片段传入，不会发送给 GitHub Pages。</p>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastText"></span></div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
